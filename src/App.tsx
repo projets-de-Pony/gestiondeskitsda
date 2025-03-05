@@ -14,6 +14,7 @@ import Contact from './pages/Contact';
 import About from './pages/About';
 import Blog from './pages/Blog';
 import ConferenceRegistration from './components/ConferenceRegistration';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   const testimonials = [
@@ -168,6 +169,7 @@ function App() {
           <Route path="/contact" element={<><Contact /><Footer /></>} />
           <Route path="/blog" element={<><Blog /><Footer /></>} />
           <Route path="/conference-registration" element={<><ConferenceRegistration /><Footer /></>} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
         </Routes>
       </div>
     </Router>
