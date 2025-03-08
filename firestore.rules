@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Fonction pour vérifier si l'utilisateur est admin
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Règles pour la collection conference_registrations
+    match /conference_registrations/{document=**} {
+      allow read, write: if true;  // Temporairement permettre tout accès pour tester
+    }
+
+    // Règles pour la collection orders
+    match /orders/{document=**} {
+      allow read, write: if true;  // Temporairement permettre tout accès pour tester
+    }
+
+    // Règles pour la collection products
+    match /products/{document=**} {
+      allow read: if true;  // Tout le monde peut lire les produits
+      allow write: if true;  // Temporairement permettre l'écriture pour tester
+    }
+
+    // Règles pour la collection categories
+    match /categories/{document=**} {
+      allow read: if true;  // Tout le monde peut lire les catégories
+      allow write: if true;  // Temporairement permettre l'écriture pour tester
+    }
+  }
+} 

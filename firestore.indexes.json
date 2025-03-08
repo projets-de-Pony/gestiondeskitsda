@@ -1,0 +1,18 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "conference_registrations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "registrationDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "orders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    }
+  ]
+} 
