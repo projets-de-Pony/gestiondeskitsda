@@ -1,7 +1,13 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
-import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
+import { 
+  getFirestore, 
+  initializeFirestore, 
+  persistentLocalCache, 
+  persistentSingleTabManager,
+  type FirestoreSettings 
+} from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 console.log('Starting Firebase initialization...'); // Log début initialisation
@@ -55,19 +61,16 @@ console.log('Firebase app initialized successfully'); // Log app initialisée
 console.log('Initializing Firebase services...'); // Log initialisation services
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
-const db = getFirestore(app);
+
+// Initialiser Firestore avec la persistence
+console.log('Initializing Firestore with persistence...'); // Log initialisation Firestore
+const firestoreSettings: FirestoreSettings = {
+  localCache: persistentLocalCache()
+};
+
+const db = initializeFirestore(app, firestoreSettings);
 const storage = getStorage(app);
 console.log('Firebase services initialized successfully'); // Log services initialisés
-
-// Activer la persistance hors ligne
-console.log('Enabling offline persistence...'); // Log activation persistance
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('La persistance hors ligne nécessite un seul onglet ouvert à la fois.');
-  } else if (err.code === 'unimplemented') {
-    console.warn('Le navigateur ne supporte pas la persistance hors ligne.');
-  }
-});
 
 console.log('Firebase initialization complete'); // Log initialisation terminée
 

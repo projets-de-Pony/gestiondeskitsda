@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Package, Grid, ShoppingBag, LogOut } from 'lucide-react';
+import { Package, Grid, ShoppingBag, LogOut, Satellite } from 'lucide-react';
 
 const AdminNavbar = () => {
   const location = useLocation();
@@ -15,6 +15,7 @@ const AdminNavbar = () => {
     { path: '/admin/dashboard', label: 'Dashboard', icon: Grid },
     { path: '/admin/products', label: 'Produits', icon: Package },
     { path: '/admin/categories', label: 'Catégories', icon: ShoppingBag },
+    { path: '/admin/starlink', label: 'Clients Starlink', icon: Satellite },
   ];
 
   return (

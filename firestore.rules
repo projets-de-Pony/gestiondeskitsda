@@ -3,29 +3,133 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Fonction pour vérifier si l'utilisateur est admin
     function isAdmin() {
-      return request.auth != null && request.auth.token.admin == true;
+      return request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // Règles pour la collection conference_registrations
+    // Collection admins
+    match /admins/{adminId} {
+      // Lecture par n'importe quel utilisateur authentifié
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Collection starlink_clients
+    match /starlink_clients/{clientId} {
+      // Seuls les admins peuvent lire et écrire
+      allow read, write: if isAdmin();
+      
+      // Validation des données
+      function isValidEmail(email) {
+        return email.matches('^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$');
+      }
+      
+      function validateEmails(emails) {
+        return emails.size() <= 3 && emails.size() > 0;
+      }
+      
+      function validatePhones(phones) {
+        return phones.size() > 0;
+      }
+      
+      function isValidCurrency(currency) {
+        return currency in ['EUR', 'NGN', 'RWF', 'XOF'];
+      }
+      
+      function isValidKitStatus(status) {
+        return status in ['active', 'inactive', 'suspended', 'restricted'];
+      }
+      
+      function isValidPaymentStatus(status) {
+        return status in ['paid', 'pending', 'unavailable', 'late'];
+      }
+      
+      // Validation à la création
+      allow create: if isAdmin() &&
+        request.resource.data.contacts.emails is list &&
+        validateEmails(request.resource.data.contacts.emails) &&
+        validatePhones(request.resource.data.contacts.phones) &&
+        isValidCurrency(request.resource.data.originalAmount.currency) &&
+        isValidKitStatus(request.resource.data.kitStatus) &&
+        isValidPaymentStatus(request.resource.data.paymentStatus) &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.updatedBy == request.auth.uid;
+      
+      // Validation à la mise à jour
+      allow update: if isAdmin() &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['createdBy', 'createdAt'])) &&
+        (!request.resource.data.contacts.emails.diff(resource.data.contacts.emails).affectedKeys().hasAll(['emails']) || validateEmails(request.resource.data.contacts.emails)) &&
+        (!request.resource.data.contacts.phones.diff(resource.data.contacts.phones).affectedKeys().hasAll(['phones']) || validatePhones(request.resource.data.contacts.phones)) &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAll(['kitStatus']) || isValidKitStatus(request.resource.data.kitStatus)) &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAll(['paymentStatus']) || isValidPaymentStatus(request.resource.data.paymentStatus)) &&
+        request.resource.data.updatedBy == request.auth.uid;
+    }
+
+    // Collection starlink_invoices
+    match /starlink_invoices/{invoiceId} {
+      // Seuls les admins peuvent lire et écrire
+      allow read, write: if isAdmin();
+      
+      // Validation des données
+      function isValidInvoiceStatus(status) {
+        return status in ['paid', 'pending', 'overdue', 'cancelled'];
+      }
+      
+      function isValidInvoiceCurrency(currency) {
+        return currency in ['EUR', 'NGN', 'RWF', 'XOF'];
+      }
+      
+      // Validation à la création
+      allow create: if isAdmin() &&
+        request.resource.data.clientId is string &&
+        request.resource.data.amount is number &&
+        request.resource.data.amount > 0 &&
+        isValidInvoiceCurrency(request.resource.data.currency) &&
+        isValidInvoiceStatus(request.resource.data.status) &&
+        request.resource.data.items is list &&
+        request.resource.data.items.size() > 0 &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.updatedBy == request.auth.uid;
+      
+      // Validation à la mise à jour
+      allow update: if isAdmin() &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['createdBy', 'createdAt', 'clientId', 'invoiceNumber'])) &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAll(['status']) || isValidInvoiceStatus(request.resource.data.status)) &&
+        request.resource.data.updatedBy == request.auth.uid;
+    }
+
+    // Collection conference_registrations
     match /conference_registrations/{document=**} {
-      allow read, write: if true;  // Temporairement permettre tout accès pour tester
+      allow read: if isAdmin();
+      allow create: if true; // Tout le monde peut s'inscrire
+      allow update, delete: if isAdmin();
     }
 
-    // Règles pour la collection orders
-    match /orders/{document=**} {
-      allow read, write: if true;  // Temporairement permettre tout accès pour tester
+    // Collection orders
+    match /orders/{orderId} {
+      allow read: if isAdmin() || 
+        (request.auth != null && resource.data.email == request.auth.token.email);
+      allow create: if true; // Tout le monde peut créer une commande
+      allow update, delete: if isAdmin();
     }
 
-    // Règles pour la collection products
-    match /products/{document=**} {
-      allow read: if true;  // Tout le monde peut lire les produits
-      allow write: if true;  // Temporairement permettre l'écriture pour tester
+    // Collection products
+    match /products/{productId} {
+      allow read: if true; // Lecture publique
+      allow write: if isAdmin(); // Écriture admin uniquement
     }
 
-    // Règles pour la collection categories
-    match /categories/{document=**} {
-      allow read: if true;  // Tout le monde peut lire les catégories
-      allow write: if true;  // Temporairement permettre l'écriture pour tester
+    // Collection categories
+    match /categories/{categoryId} {
+      allow read: if true; // Lecture publique
+      allow write: if isAdmin(); // Écriture admin uniquement
+    }
+
+    // Collection admin_logs
+    match /admin_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false; // Pas de modification ou suppression des logs
     }
   }
 } 
